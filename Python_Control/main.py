@@ -4,7 +4,6 @@ import time
 import AutotrackerKeyboard
 from shared_state import SharedState
 import logging
-import subprocess
 from api.api import API  # Import the API class
 import sys
 
