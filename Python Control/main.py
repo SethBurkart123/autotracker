@@ -1,125 +1,144 @@
 import time
+import AutotrackerKeyboard
+from shared_state import SharedState
 import logging
-import threading
-from control_interface import SystemState
-import uvicorn  # FastAPI server runner
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Initialize the system state
-system_state = SystemState()
+# Initialize shared state
+state = SharedState()
 
-# Function to run the FastAPI server (for the API)
-def run_api():
-    uvicorn.run("api:app", host="0.0.0.0", port=8000)  # Removed reload=True
+# Create the controller (with serial connection)
+Controller = AutotrackerKeyboard.Controller('/dev/cu.usbserial-1130')
 
-# Control loop to handle regular system operations (input control, LED updates, etc.)
-def control_loop():
-    camera_select_mode = False
-    preset_setting_mode = False
-    home_mode = False
-    fast_mode_active = False
+# Attempt to connect to the first available camera
+for i in range(len(state.cameras)):
+    if state.connect_to_camera(i):
+        break
 
-    while True:
-        # Check for camera selection mode changes
-        if system_state.controller.inputCtrl.camera_select_mode:
-            if not camera_select_mode:
-                logging.debug("Entering camera select mode")
-                camera_select_mode = True
-                preset_setting_mode = False
-                system_state.controller.update_led_for_camera_select()
+if state.cam is None:
+    print("No cameras available. Please check your camera IP addresses.")
 
-        elif system_state.controller.inputCtrl.preset_setting_mode:
-            if not preset_setting_mode:
-                logging.debug("Entering preset setting mode")
-                preset_setting_mode = True
-                camera_select_mode = False
-                system_state.controller.update_led_for_preset_setting()
+# Initialize the camera function button color
+def update_camera_function_button():
+    current_camera_color = state.cameras[state.current_camera_index]['color']
+    Controller.LED.update(3, 2, current_camera_color)
 
+# Call this function to set the initial state
+update_camera_function_button()
+
+def update_led_for_camera_select():
+    logging.debug("Updating LEDs for camera select mode")
+    Controller.LED.clear_all()
+    for i, camera in enumerate(state.cameras):
+        y, x = i % 5, i // 5
+        color = camera['color']
+        if i == state.current_camera_index:
+            Controller.LED.update(x, y, color)  # Full brightness
         else:
-            if camera_select_mode or preset_setting_mode:
-                logging.debug("Exiting special modes")
-                camera_select_mode = False
-                preset_setting_mode = False
-                system_state.controller.update_led_for_normal_mode()
+            dark_color = [int(c * 0.3) for c in color]  # 30% brightness for non-selected cameras
+            Controller.LED.update(x, y, dark_color)
+    update_camera_function_button()
 
-        # Check if the camera has changed via the input or API
-        if system_state.controller.inputCtrl.camera_changed:
-            new_camera_index = system_state.controller.inputCtrl.selected_camera
-            logging.info(f"Attempting to switch to camera {new_camera_index}")
-            if system_state.connect_to_camera(new_camera_index):
-                logging.info(f"Successfully switched to camera {system_state.cameras[new_camera_index]['ip']}")
-                system_state.controller.update_camera_function_button()
-            else:
-                logging.error(f"Failed to switch to camera at index {new_camera_index}")
-            system_state.controller.inputCtrl.camera_changed = False
+def update_led_for_normal_mode():
+    logging.debug("Updating LEDs for normal mode")
+    Controller.LED.clear_all()
+    update_camera_function_button()
+    update_fast_mode_led()
 
-        # Handle preset recalling and saving
-        if system_state.controller.inputCtrl.setPreset:
-            try:
-                preset_number = system_state.controller.inputCtrl.presetNumber
-                system_state.save_preset(preset_number + 1)  # Add 1 because presets are 1-indexed
-                logging.info(f"Saved preset {preset_number + 1}")
-            except Exception as e:
-                logging.error(f"Error saving preset: {e}")
-            system_state.controller.inputCtrl.setPreset = False
+def update_fast_mode_led():
+    if state.fast_mode_active:
+        Controller.LED.update(3, 4, [0, 0, 0])  # Black for fast mode
+    else:
+        Controller.LED.update(3, 4, [0, 255, 0])  # Green for normal mode
 
-        if system_state.controller.inputCtrl.updatePreset:
-            try:
-                preset_number = system_state.controller.inputCtrl.presetNumber + 1
-                system_state.recall_preset(preset_number)
-                logging.info(f"Recalled preset {preset_number}")
-            except Exception as e:
-                logging.error(f"Error recalling preset: {e}")
-            system_state.controller.inputCtrl.updatePreset = False
+def update_led_for_preset_setting():
+    logging.debug("Updating LEDs for preset setting mode")
+    Controller.LED.clear_all()
+    for i in range(10):  # Assuming 10 preset buttons
+        y, x = i % 5, i // 5
+        Controller.LED.update(x, y, [0, 0, 255])  # Blue color for preset buttons
+    Controller.LED.update(3, 3, [255, 0, 0])  # Red color for preset setting button
+    update_camera_function_button()
 
-        # Handle pan/tilt/zoom updates
-        if system_state.controller.inputCtrl.pan != system_state.controller.inputCtrl.pan or \
-           system_state.controller.inputCtrl.tilt != system_state.controller.inputCtrl.tilt:
-            try:
-                system_state.pan_tilt(-system_state.controller.inputCtrl.pan, -system_state.controller.inputCtrl.tilt)
-            except Exception as e:
-                logging.error(f"Error adjusting pan/tilt: {e}")
+while True:
+    if state.cam is None:
+        time.sleep(1)
+        continue
 
-        if system_state.controller.inputCtrl.zoom != system_state.controller.inputCtrl.zoom:
-            try:
-                system_state.zoom(system_state.controller.inputCtrl.zoom)
-            except Exception as e:
-                logging.error(f"Error adjusting zoom: {e}")
+    # Camera select mode
+    if Controller.inputCtrl.camera_select_mode:
+        if not state.camera_select_mode:
+            logging.debug("Entering camera select mode")
+            state.camera_select_mode = True
+            state.preset_setting_mode = False
+            update_led_for_camera_select()
+    elif Controller.inputCtrl.preset_setting_mode:
+        if not state.preset_setting_mode:
+            logging.debug("Entering preset setting mode")
+            state.preset_setting_mode = True
+            state.camera_select_mode = False
+            update_led_for_preset_setting()
+    else:
+        if state.camera_select_mode or state.preset_setting_mode:
+            logging.debug("Exiting special modes")
+            state.camera_select_mode = False
+            state.preset_setting_mode = False
+            update_led_for_normal_mode()
 
-        # Handle fast mode toggle
-        if system_state.controller.inputCtrl.fast_mode != fast_mode_active:
-            fast_mode_active = system_state.controller.inputCtrl.fast_mode
-            try:
-                system_state.cam.slow_pan_tilt(fast_mode_active)
-                system_state.controller.update_fast_mode_led()
-            except Exception as e:
-                logging.error(f"Error setting fast pan/tilt mode: {e}")
+    # Camera change handling
+    if Controller.inputCtrl.camera_changed:
+        new_camera_index = Controller.inputCtrl.selected_camera
+        logging.info(f"Attempting to switch to camera {new_camera_index}")
+        if state.connect_to_camera(new_camera_index):
+            logging.info(f"Successfully switched to camera at {state.cameras[state.current_camera_index]['ip']}")
+            update_camera_function_button()
+        else:
+            logging.error(f"Failed to switch to camera at index {new_camera_index}")
+        Controller.inputCtrl.camera_changed = False
 
-        # Handle home position
-        if system_state.controller.inputCtrl.home_bool != home_mode:
-            home_mode = system_state.controller.inputCtrl.home_bool
-            try:
-                system_state.cam.reset_sequence_number()
-                system_state.cam.home()
-                home_mode = False
-            except Exception as e:
-                logging.error(f"Error homing: {e}")
+    # **Preset Recall Handling**
+    if Controller.inputCtrl.updatePreset:
+        try:
+            preset_number = Controller.inputCtrl.presetNumber + 1
+            logging.debug(f"Attempting to recall preset {preset_number}")
+            state.cam.recall_preset(preset_number)
+            print(f"Recalled preset {preset_number}")
+        except Exception as e:
+            print(f"Error recalling preset: {e}")
+        Controller.inputCtrl.updatePreset = False
 
-        # Sleep briefly to prevent excessive CPU usage
-        time.sleep(0.005)
+    # **Preset Save Handling (Add this block)**
+    if Controller.inputCtrl.setPreset:
+        try:
+            preset_number = Controller.inputCtrl.presetNumber
+            logging.debug(f"Attempting to save preset {preset_number + 1}")
+            state.cam.save_preset(preset_number + 1)  # Preset numbers are 1-indexed
+            print(f"Saved preset {preset_number + 1}")
+            y, x = preset_number % 5, preset_number // 5  # Correctly calculate x and y
+            Controller.LED.update(x, y, [255, 255, 0])  # Yellow color for set preset
+            logging.debug(f"Updated LED at ({x},{y}) to yellow for saved preset")
+        except Exception as e:
+            print(f"Error saving preset: {e}")
+        Controller.inputCtrl.setPreset = False
 
+    # Pan/tilt updates
+    if Controller.inputCtrl.pan != state.currentPan or Controller.inputCtrl.tilt != state.currentTilt:
+        state.update_pan_tilt(Controller.inputCtrl.pan, Controller.inputCtrl.tilt)
 
-if __name__ == "__main__":
-    # Create threads for both the API and control loop
-    api_thread = threading.Thread(target=run_api, daemon=True)
-    control_thread = threading.Thread(target=control_loop, daemon=True)
+    # Zoom updates
+    if Controller.inputCtrl.zoom != state.currentZoom:
+        state.update_zoom(Controller.inputCtrl.zoom)
 
-    # Start both threads
-    api_thread.start()
-    control_thread.start()
+    # Fast mode toggle
+    if Controller.inputCtrl.fast_mode != state.fast_mode_active:
+        state.toggle_fast_mode(Controller.inputCtrl.fast_mode)
+        update_fast_mode_led()
 
-    # Join the threads to keep the program running
-    api_thread.join()
-    control_thread.join()
+    # Home command
+    if Controller.inputCtrl.home_bool != state.home_mode:
+        state.home_mode = Controller.inputCtrl.home_bool
+        if state.home_mode:
+            state.home_camera()
+
+    time.sleep(0.005)
