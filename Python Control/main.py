@@ -12,6 +12,7 @@ state = SharedState()
 
 # Create the controller (with serial connection)
 usb_devices = subprocess.check_output(['ls', '/dev/ttyUSB*'], stderr=subprocess.STDOUT).decode().strip().split('\n')
+print(usb_devices)
 Controller = AutotrackerKeyboard.Controller(usb_devices[0])
 state.set_controller(Controller)  # Add this line
 
