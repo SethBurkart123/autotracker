@@ -4,8 +4,13 @@ import logging
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
+
+class CameraModel(BaseModel):
+    ip: str
+    color: list
 
 class API:
     def __init__(self, host='0.0.0.0', port=9000, controller=None, shared_state=None):
@@ -39,9 +44,12 @@ class API:
         async def update_config(config: dict):
             self.shared_state.config = config
             self.shared_state.cameras = config['cameras']
-            with open('config.json', 'w') as f:
-                json.dump(config, f, indent=2)
+            self.save_config()
             return {"message": "Configuration updated successfully"}
+
+        @self.app.get("/cameras")
+        async def get_cameras():
+            return self.shared_state.cameras
 
         @self.app.get("/camera/{index}")
         async def get_camera(index: int):
@@ -50,16 +58,38 @@ class API:
             raise fastapi.HTTPException(status_code=404, detail="Camera not found")
 
         @self.app.put("/camera/{index}")
-        async def update_camera(index: int, camera: dict):
+        async def update_camera(index: int, camera: CameraModel):
             if 0 <= index < len(self.shared_state.cameras):
-                self.shared_state.cameras[index] = camera
-                self.shared_state.config['cameras'][index] = camera
-                with open('config.json', 'w') as f:
-                    json.dump(self.shared_state.config, f, indent=2)
-                # Trigger LED update
+                self.shared_state.cameras[index] = camera.dict()
+                self.shared_state.config['cameras'][index] = camera.dict()
+                self.save_config()
                 self.shared_state.update_leds()
                 return {"message": f"Camera {index} updated successfully"}
             raise fastapi.HTTPException(status_code=404, detail="Camera not found")
+
+        @self.app.post("/camera")
+        async def add_camera(camera: CameraModel):
+            if len(self.shared_state.cameras) >= 15:
+                raise fastapi.HTTPException(status_code=400, detail="Maximum number of cameras (15) reached")
+            self.shared_state.cameras.append(camera.dict())
+            self.shared_state.config['cameras'] = self.shared_state.cameras
+            self.save_config()
+            self.shared_state.update_leds()
+            return {"message": "Camera added successfully"}
+
+        @self.app.delete("/camera/{index}")
+        async def remove_camera(index: int):
+            if 0 <= index < len(self.shared_state.cameras):
+                removed_camera = self.shared_state.cameras.pop(index)
+                self.shared_state.config['cameras'] = self.shared_state.cameras
+                self.save_config()
+                self.shared_state.update_leds()
+                return {"message": f"Camera at index {index} removed successfully", "removed_camera": removed_camera}
+            raise fastapi.HTTPException(status_code=404, detail="Camera not found")
+
+    def save_config(self):
+        with open('config.json', 'w') as f:
+            json.dump(self.shared_state.config, f, indent=2)
 
     def start(self):
         self.thread = threading.Thread(target=self.run)
