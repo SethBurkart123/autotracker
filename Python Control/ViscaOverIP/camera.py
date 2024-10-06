@@ -33,41 +33,47 @@ class Camera:
         self._send_command('00 01')  # clear the camera's interface socket
 
     def _send_command(self, command_hex: str, query=False) -> Optional[bytes]:
-        """Constructs a message based ong the given payload, sends it to the camera,
-        and blocks until an acknowledge or completion response has been received.
-        :param command_hex: The body of the command as a hex string. For example: "00 02" to power on.
-        :param query: Set to True if this is a query and not a standard command.
-            This affects the message preamble and also ensures that a response will be returned and not None
-        :return: The body of the first response to the given command as bytes
-        """
-        payload_type = b'\x01\x00'
-        preamble = b'\x81' + (b'\x09' if query else b'\x01')
-        terminator = b'\xff'
+        logging.debug(f"Sending command: {command_hex}")
+        max_retries = 3
+        retry_delay = 0.1
 
-        payload_bytes = preamble + bytearray.fromhex(command_hex) + terminator
-        payload_length = len(payload_bytes).to_bytes(2, 'big')
-
-        exception = None
-        for retry_num in range(self.num_retries):
-            self._increment_sequence_number()
-            sequence_bytes = self.sequence_number.to_bytes(4, 'big')
-            message = payload_type + payload_length + sequence_bytes + payload_bytes
-
-            self._sock.sendto(message, self._location)
-
+        for retry in range(max_retries):
             try:
+                payload_type = b'\x01\x00'
+                preamble = b'\x81' + (b'\x09' if query else b'\x01')
+                terminator = b'\xff'
+
+                payload_bytes = preamble + bytearray.fromhex(command_hex) + terminator
+                payload_length = len(payload_bytes).to_bytes(2, 'big')
+
+                self._increment_sequence_number()
+                sequence_bytes = self.sequence_number.to_bytes(4, 'big')
+                message = payload_type + payload_length + sequence_bytes + payload_bytes
+
+                self._sock.sendto(message, self._location)
+                logging.debug(f"Sent message: {message.hex()}")
+
                 response = self._receive_response()
-            except ViscaException as exc:
-                exception = exc
-            else:
+                logging.debug(f"Received response: {response.hex() if response else 'None'}")
+
                 if response is not None:
                     return response[1:-1]
                 elif not query:
                     return None
-        if exception:
-            raise exception
-        else:
-            raise NoQueryResponse(f'Could not get a response after {self.num_retries} tries')
+            except ViscaException as exc:
+                logging.error(f"ViscaException on retry {retry + 1}: {exc}")
+                if retry < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    raise
+            except Exception as e:
+                logging.error(f"Unexpected error on retry {retry + 1}: {e}")
+                if retry < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    raise
+
+        raise NoQueryResponse(f'Could not get a response after {max_retries} tries')
 
     def _receive_response(self) -> Optional[bytes]:
         """Attempts to receive the response of the most recent command.

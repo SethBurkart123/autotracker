@@ -2,7 +2,6 @@
 
 import json
 from ViscaOverIP.camera import Camera
-import ViscaOverIP.exceptions
 
 class SharedState:
     def __init__(self, config_file='config.json'):
@@ -56,7 +55,7 @@ class SharedState:
         if self.cam:
             try:
                 self.cam.pantilt(pan_speed=-pan, tilt_speed=-tilt)
-            except ViscaOverIP.exceptions.ViscaError as e:
+            except Exception as e:
                 print(f"Error updating pan/tilt: {e}")
 
     def update_zoom(self, zoom):
