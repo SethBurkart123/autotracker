@@ -26,5 +26,15 @@ class LedController:
         binary_data = bytes(temp_list)
         self.ser.write(binary_data[:-6]) #idk why -6 bytes????
     
+    def clear_presets(self):
+        for x in range(3):
+            for y in range(5):
+                self.LED_STATE[x][y] = [0, 0, 0]
+
+    def clear_all(self):
+        for x in range(4):
+            for y in range(5):
+                self.LED_STATE[x][y] = [0, 0, 0]
+    
     def update(self, x, y, rgb):
         self.LED_STATE[x][y] = rgb

@@ -1,3 +1,6 @@
+import json
+import logging
+
 class inputController:
     def __init__(self, ser):
         self.ser = ser
@@ -16,11 +19,22 @@ class inputController:
             [10, 11, 12, 13, 14],
             [15, 16, 17, 18, 19]
         ]
-        self.updateLed = False
         self.presetNumber = 0
         self.updatePreset = False
         self.setPreset = False
-    
+
+        self.camera_select_mode = False
+        self.preset_setting_mode = False  # New attribute for preset setting mode
+        self.selected_camera = 0
+        self.camera_changed = False
+
+        # Load camera configuration
+        with open('config.json', 'r') as config_file:
+            config = json.load(config_file)
+        self.cameras = config['cameras']
+
+        self.fast_mode = False
+
     def updateButton(self, x, y, value):
         self.buttonState[x][y] = value
     
@@ -33,7 +47,7 @@ class inputController:
             self.pan = value
 
     def updateZoom(self, value):
-        if (self.zoom != value):
+        if self.zoom != value:
             self.zoom = value
 
     def processPacket(self, case, LED):
@@ -42,29 +56,46 @@ class inputController:
         elif case[0] == b'1':
             self.updatePan(int(case[1]))
         elif case[0] == b'2':
-            #print("UpdateZoom 1")
             self.updateZoom(int(case[1]))
-        else: #update button
+        else:  # update button
             if len(case) == 3:
                 xloc = int(case[1])-2
                 yloc = 4-(int(case[0])-6)
                 value = bool(int(case[2]))
                 self.updateButton(xloc, yloc, value)
                 
-                print(xloc, yloc)
-                if xloc <= 2: #first 15 buttons (preset buttons)
-                    if value: # if button has been pressed down
-                        if self.buttonState[3][2]: # Preset Set Button Down
-                            self.setPreset = True
-                        else:
-                            self.updatePreset = True
+                if xloc == 3 and yloc == 2:  # Camera select modifier button
+                    self.camera_select_mode = value
+                    self.preset_setting_mode = False
+                elif xloc == 3 and yloc == 3:  # Preset setting modifier button
+                    self.preset_setting_mode = value
+                    self.camera_select_mode = False
+                elif xloc == 3 and yloc == 4:  # Slow mode modifier button
+                    self.fast_mode = not value
+                elif self.camera_select_mode:
+                    self.process_camera_select(xloc, yloc, value)
+                elif self.preset_setting_mode:
+                    self.process_preset_setting(xloc, yloc, value)
+                elif xloc <= 2:  # first 15 buttons (preset buttons)
+                    if value:  # if button has been pressed down
+                        self.updatePreset = True
                         self.presetNumber = self.buttonMap[xloc][yloc]
 
-                if value: # button is pressed down
-                    # Turn on led
-                    LED.update(xloc, yloc, [255, 0, 255])
-                    self.updateLed = True
-                else: # button is up
-                    # Turn off led
-                    LED.update(xloc, yloc, [0, 0, 0])
-                    self.updateLed = True
+    def process_camera_select(self, x, y, value):
+        if x <= 2 and y <= 4:  # First 15 buttons
+            camera_index = x * 5 + y
+            if value and camera_index < len(self.cameras):  # Button pressed and camera exists
+                self.selected_camera = camera_index
+                self.camera_changed = True
+                return True  # Indicate that a camera was selected
+        return False  # No camera was selected
+
+    def process_preset_setting(self, x, y, value):
+        if x <= 2 and y <= 4:  # First 15 buttons
+            preset_index = x * 5 + y
+            if value:  # Button pressed
+                self.setPreset = True
+                self.presetNumber = preset_index
+                return True  # Indicate that a preset was set
+        return False  # No preset was set
+

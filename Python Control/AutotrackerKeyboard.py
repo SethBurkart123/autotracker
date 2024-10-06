@@ -16,13 +16,13 @@ class Controller:
     self.stop_serial_thread = False
     self.stop_led_thread = False
 
-    time.sleep(0.1) #?????
+    time.sleep(0.1)
 
     # Create a new thread to read from the serial port
     self.serial_thread = threading.Thread(target=self.read_from_port, args=())
     self.serial_thread.start()
 
-    # Create a new thread to read from the serial port
+    # Create a new thread to update LEDs
     self.led_thread = threading.Thread(target=self.update_led, args=())
     self.led_thread.start()
 
@@ -31,17 +31,17 @@ class Controller:
     while not self.stop_serial_thread:
       try:
         data = self.ser.readline()[:-2].split(b',')
-        if (data != b''): #where on earth are these comming from ??????
+        if (data != b''): 
           self.inputCtrl.processPacket(data, self.LED)
       except:
         time.sleep(0.01)
 
   def update_led(self):
     while not self.stop_led_thread:
-      if self.inputCtrl.updateLed:
-        #self.LED.update(loc[0], loc[1], [255,0,255])
+      try:
         self.LED.show()
-        self.inputCtrl.updateLed = False
+      except Exception as e:
+        print(f"Error updating LEDs: {e}")
       time.sleep(0.01)
 
   def close(self):

@@ -1,5 +1,7 @@
 import socket
 from typing import Optional, Tuple
+import logging
+import time
 
 from ViscaOverIP.exceptions import ViscaException, NoQueryResponse
 
@@ -642,5 +644,29 @@ class Camera:
         modes = {2: 'auto', 3: 'manual'}
         response = self._send_command('04 38', query=True)
         return modes[response[-1]]
+    
+    def slow_pan_tilt(self, mode: bool):
+        """Sets the slow mode of the camera
+        :param mode: True for slow mode, False for normal mode
+        """
+        tries = 0
 
+        while True:
+            try:
+                if mode:
+                    logging.info("Slow pan tilt")
+                    self._send_command('06 44 02')
+                    break
+                else:
+                    logging.info("Fast pan tilt")
+                    self._send_command('06 44 03')
+                    break
+            except Exception as e:
+                logging.error(f"Error setting slow pan/tilt mode: {e}. Trying again in 100ms.")
+                time.sleep(0.1)
+                tries += 1
+                if tries > 3:
+                    logging.error("Failed to set slow pan/tilt mode after 3 tries. Exiting.")
+                    break
+    
     # other inquiry commands
