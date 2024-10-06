@@ -71,6 +71,7 @@ class Camera:
                 message = payload_type + payload_length + sequence_bytes + payload_bytes
 
                 self._sock.sendto(message, self._location)
+                self._sock.sendto(message, self._location)
 
                 response = self._receive_response()
 
@@ -80,12 +81,16 @@ class Camera:
                     return None
             except ViscaException as exc:
                 logging.error(f"ViscaException on retry {retry + 1}: {exc}")
+                self.reset_sequence_number()
+                self.reset_connection()
                 if retry < max_retries - 1:
                     time.sleep(retry_delay)
                 else:
                     raise
             except Exception as e:
                 logging.error(f"Unexpected error on retry {retry + 1}: {e}")
+                self.reset_sequence_number()
+                self.reset_connection()
                 if retry < max_retries - 1:
                     time.sleep(retry_delay)
                 else:
