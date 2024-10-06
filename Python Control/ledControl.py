@@ -26,7 +26,6 @@ class LedController:
         self.animation_thread.start()
 
     def show(self):
-<<<<<<< Updated upstream
         with self.led_state_lock:  # Protect access to LED_STATE
             for x in range(5):
                 for y in range(4):
@@ -36,28 +35,6 @@ class LedController:
         temp_list = [item for sublist in self.LED_TEMP for item in sublist]
         binary_data = bytes(temp_list)
         self.ser.write(binary_data[:-6]) #idk why -6 bytes????
-=======
-        retries = 0
-        while retries < self.max_retries:
-            try:
-                with self.led_state_lock:  # Protect access to LED_STATE
-                    for x in range(5):
-                        for y in range(4):
-                            if self.LED_LUT[y][x] != None:
-                                self.LED_TEMP[self.LED_LUT[y][x]] = self.LED_STATE[y][x]
-                # Convert the list of lists into a flat list
-                temp_list = [item for sublist in self.LED_TEMP for item in sublist]
-                binary_data = bytes(temp_list)
-                self.ser.write(binary_data[:-6]) #idk why -6 bytes????
-                return  # Success, exit the retry loop
-            except IOError as e:
-                logging.warning(f"I/O error while updating LEDs (attempt {retries + 1}): {e}")
-                retries += 1
-                if retries < self.max_retries:
-                    time.sleep(self.retry_delay)
-                else:
-                    logging.error(f"Failed to update LEDs after {self.max_retries} attempts")
->>>>>>> Stashed changes
 
     def clear_presets(self):
         with self.led_state_lock:
