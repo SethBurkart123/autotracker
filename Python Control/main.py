@@ -147,7 +147,7 @@ try:
                 y, x = (preset_number - 1) % 5, (preset_number - 1) // 5
 
                 Controller.LED.update(x, y, [255, 255, 0])
-                #Controller.LED.add_fade_to_black_animation(x, y, duration=0.5)
+                Controller.LED.add_fade_to_black_animation(x, y, duration=0.5)
 
                 logging.debug(f"Attempting to recall preset {preset_number}")
                 state.cam.recall_preset(preset_number)
@@ -172,7 +172,7 @@ try:
                 Controller.LED.update(x, y, [255, 255, 0])  # Yellow for preset selection
                 
                 # Trigger the fade-to-black animation
-                #Controller.LED.add_fade_to_color_animation(x, y, [0, 0, 255], duration=1.0)
+                Controller.LED.add_fade_to_color_animation(x, y, [0, 0, 255], duration=1.0)
 
                 logging.debug(f"Updated LED at ({x},{y}) to yellow for saved preset, fading out.")
             except Exception as e:
