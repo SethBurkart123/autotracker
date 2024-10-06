@@ -10,24 +10,6 @@ from ViscaOverIP.exceptions import ViscaException, NoQueryResponse
 
 SEQUENCE_NUM_MAX = 2 ** 32 - 1
 
-def safe_command(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        with self._operation_lock:
-            try:
-                return func(self, *args, **kwargs)
-            except Exception as e:
-                # Log the error
-                print(f"Error in {func.__name__}: {e}")
-                # Reset the connection and retry once
-                self.reset_connection()
-                try:
-                    return func(self, *args, **kwargs)
-                except Exception as e:
-                    print(f"Error persists after reset in {func.__name__}: {e}")
-                    return None
-    return wrapper
-
 class Camera:
     """
     Represents a camera that has a VISCA-over-IP interface.
@@ -70,7 +52,6 @@ class Camera:
         # Small delay to ensure connection is established
         time.sleep(0.5)
 
-    @safe_command
     def _send_command(self, command_hex: str, query=False) -> Optional[bytes]:
         #self.command_buffer.add_command(command_hex, query)
         max_retries = 3
