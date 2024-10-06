@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 state = SharedState()
 
 # Create the controller (with serial connection)
-Controller = AutotrackerKeyboard.Controller('/dev/cu.usbserial-1130')
+Controller = AutotrackerKeyboard.Controller('/dev/ttyUSB0')
 state.set_controller(Controller)  # Add this line
 
 # Attempt to connect to the first available camera
