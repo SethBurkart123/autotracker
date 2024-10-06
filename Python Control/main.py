@@ -6,6 +6,7 @@ from shared_state import SharedState
 import logging
 import subprocess
 from api.api import API  # Import the API class
+import sys
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -17,6 +18,10 @@ def find_usb_device():
     usb_devices = glob.glob('/dev/ttyUSB*')
     if usb_devices:
         return usb_devices[0]
+    
+    mac_devices = glob.glob('/dev/cu.usbserial*')
+    if mac_devices:
+        return mac_devices[0]
     
     # If no ttyUSB* found, try ttyACM*
     acm_devices = glob.glob('/dev/ttyACM*')

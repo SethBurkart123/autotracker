@@ -4,7 +4,7 @@ import json
 
 class SystemState:
     def __init__(self):
-        self.controller = Controller('/dev/cu.usbserial-1130')  # Path to your serial device
+        self.controller = None
         self.current_camera_index = 0
         self.cameras = []
         self.cam = None
