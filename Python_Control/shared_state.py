@@ -34,6 +34,7 @@ class SharedState:
                     self.cam.close_connection()
                 self.cam = Camera(self.cameras[index]['ip'])
                 self.current_camera_index = index
+                self.cam.slow_pan_tilt(True)
                 return True
             except Exception as e:
                 print(f"Error connecting to camera at {self.cameras[index]['ip']}: {e}")
