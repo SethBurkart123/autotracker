@@ -24,6 +24,8 @@ class SharedState:
         self.home_mode = False
         self.fast_mode_active = False
 
+        self.controller = None  # Add this line
+
     def connect_to_camera(self, index):
         """Connect to a camera based on index from the config."""
         if 0 <= index < len(self.cameras):
@@ -70,4 +72,51 @@ class SharedState:
         self.fast_mode_active = mode
         if self.cam:
             self.cam.slow_pan_tilt(mode)
+
+    def set_controller(self, controller):
+        self.controller = controller
+
+    def update_leds(self):
+        if self.controller:
+            if self.camera_select_mode:
+                self.update_led_for_camera_select()
+            elif self.preset_setting_mode:
+                self.update_led_for_preset_setting()
+            else:
+                self.update_led_for_normal_mode()
+
+    def update_led_for_camera_select(self):
+        self.controller.LED.clear_all()
+        for i, camera in enumerate(self.cameras):
+            y, x = i % 5, i // 5
+            color = camera['color']
+            if i == self.current_camera_index:
+                self.controller.LED.update(x, y, color)
+            else:
+                dark_color = [int(c * 0.3) for c in color]
+                self.controller.LED.update(x, y, dark_color)
+        self.update_camera_function_button()
+
+    def update_camera_function_button(self):
+        current_camera_color = self.cameras[self.current_camera_index]['color']
+        self.controller.LED.update(3, 2, current_camera_color)
+
+    def update_led_for_preset_setting(self):
+        self.controller.LED.clear_all()
+        for i in range(10):
+            y, x = i % 5, i // 5
+            self.controller.LED.update(x, y, [0, 0, 255])
+        self.controller.LED.update(3, 3, [255, 0, 0])
+        self.update_camera_function_button()
+
+    def update_led_for_normal_mode(self):
+        self.controller.LED.clear_all()
+        self.update_camera_function_button()
+        self.update_fast_mode_led()
+
+    def update_fast_mode_led(self):
+        if self.fast_mode_active:
+            self.controller.LED.update(3, 4, [0, 0, 0])
+        else:
+            self.controller.LED.update(3, 4, [0, 255, 0])
 
