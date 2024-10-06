@@ -34,7 +34,7 @@ class API:
         self.setup_routes()
 
         # Mount the frontend static files
-        self.app.mount("/", StaticFiles(directory="../frontend/dist", html=True), name="frontend")
+        self.app.mount("/", StaticFiles(directory="./frontend/dist", html=True), name="frontend")
 
         self.server = None
         self.thread = None

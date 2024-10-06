@@ -30,10 +30,11 @@ export function CameraConfig({ index, camera, onUpdate, onRemove }: CameraConfig
         ip,
         color: [color.r, color.g, color.b]
       }
-      await axios.put(`http://localhost:9000/camera/${index}`, updatedCamera)
+      await axios.put(`/api/camera/${index}`, updatedCamera)
       toast.success('Camera updated successfully')
       onUpdate()
     } catch (error) {
+      console.error('Error updating camera:', error)
       toast.error('Failed to update camera')
     }
   }
