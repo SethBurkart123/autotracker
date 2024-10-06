@@ -2,9 +2,9 @@ import time
 import AutotrackerKeyboard
 from ViscaOverIP import Camera
 
-cam = Camera('192.168.0.75')  # Your camera's IP address or hostname here
+cam = Camera('192.168.0.31')  # Your camera's IP address or hostname here
 
-Controller = AutotrackerKeyboard.Controller('/dev/cu.usbserial-110')
+Controller = AutotrackerKeyboard.Controller('/dev/cu.usbserial-2130')
 
 #cam.info_display(False)
 
@@ -39,9 +39,9 @@ while True:
     if Controller.inputCtrl.pan != currentPan or Controller.inputCtrl.tilt != currentTilt:
         #Controller.inputCtrl.updatePanTilt = False
         try:
-            currentPan = Controller.inputCtrl.pan
-            currentTilt = Controller.inputCtrl.tilt
-            cam.pantilt(pan_speed=Controller.inputCtrl.pan, tilt_speed=Controller.inputCtrl.tilt)
+            currentPan = 1 - Controller.inputCtrl.pan
+            currentTilt = 1 - Controller.inputCtrl.tilt
+            cam.pantilt(pan_speed=currentPan, tilt_speed=currentTilt)
         except:
             pass
         
