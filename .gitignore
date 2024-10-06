@@ -1,0 +1,7 @@
+Cartoon-Emotion-Recognition/
+.DS_Store
+.vite
+node_modules
+ncnn
+venv
+AutoLabel/AutoLabel.zip
