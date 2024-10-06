@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from 'react-hot-toast'
 import { RgbColorPicker } from 'react-colorful'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Plus } from 'lucide-react'
 
 interface AddCameraProps {
   onAdd: () => void
@@ -55,7 +56,10 @@ export function AddCamera({ onAdd }: AddCameraProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>Add New Camera</Button>
+        <Button variant="outline" size="sm">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Camera
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

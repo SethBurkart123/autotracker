@@ -5,12 +5,7 @@ import { CameraConfig } from './components/CameraConfig'
 import { AddCamera } from './components/AddCamera'
 import { Button } from "@/components/ui/button"
 import { toast, Toaster } from 'react-hot-toast'
-import { Loader2, Plus } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Loader2 } from 'lucide-react'
 
 interface Camera {
   ip: string
