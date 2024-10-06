@@ -33,16 +33,21 @@ class LedController:
         retries = 0
         while retries < self.max_retries:
             try:
-                with self.led_state_lock:  # Protect access to LED_STATE
-                    for x in range(5):
-                        for y in range(4):
-                            if self.LED_LUT[y][x] != None:
-                                self.LED_TEMP[self.LED_LUT[y][x]] = self.LED_STATE[y][x]
-                # Convert the list of lists into a flat list
-                temp_list = [item for sublist in self.LED_TEMP for item in sublist]
+                with self.led_state_lock:
+                    temp_list = []
+                    for y in range(4):
+                        for x in range(5):
+                            if self.LED_LUT[y][x] is not None:
+                                temp_list.extend(self.LED_STATE[y][x])
+                
                 binary_data = bytes(temp_list)
-                self.ser.write(binary_data[:-6]) #idk why -6 bytes????
-                return  # Success, exit the retry loop
+                logging.debug(f"Sending LED data: {binary_data.hex()}")
+                
+                self.ser.write(binary_data)
+                self.ser.flush()  # Ensure all data is sent
+                
+                logging.debug("LED data sent successfully")
+                return
             except IOError as e:
                 logging.warning(f"I/O error while updating LEDs (attempt {retries + 1}): {e}")
                 retries += 1
