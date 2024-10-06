@@ -1,6 +1,6 @@
 #! /bin/bash
 
-cd ~/Documents/AutoTracker/Python\ Control
+cd ~/Documents/AutoTracker/Python_Control
 git pull
 
 source venv/bin/activate
