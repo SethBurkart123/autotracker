@@ -149,7 +149,6 @@ try:
                 Controller.LED.update(x, y, [255, 255, 0])
                 Controller.LED.add_fade_to_black_animation(x, y, duration=0.5)
 
-                logging.debug(f"Attempting to recall preset {preset_number}")
                 state.cam.recall_preset(preset_number)
 
                 print(f"Recalled preset {preset_number}")
@@ -161,7 +160,6 @@ try:
         if Controller.inputCtrl.setPreset:
             try:
                 preset_number = Controller.inputCtrl.presetNumber
-                logging.debug(f"Attempting to save preset {preset_number + 1}")
                 state.cam.save_preset(preset_number + 1)  # Save the preset in the camera
                 print(f"Saved preset {preset_number + 1}")
 
