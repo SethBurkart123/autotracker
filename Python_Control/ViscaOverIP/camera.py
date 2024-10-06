@@ -178,7 +178,6 @@ class Camera:
         else:
             self._send_command('7E 08 18 03')
 
-    @safe_command
     def pantilt(self, pan_speed: int, tilt_speed: int, pan_position=None, tilt_position=None, relative=False):
         """Commands the camera to pan and/or tilt.
         You must specify both pan_position and tilt_position OR specify neither
@@ -243,7 +242,6 @@ class Camera:
                 get_direction_hex(pan_speed) + get_direction_hex(tilt_speed)
             )
 
-    @safe_command
     def pantilt_home(self):
         """Moves the camera to the home position"""
         self._send_command('06 04')
@@ -252,13 +250,11 @@ class Camera:
         """Moves the camera to the reset position"""
         self._send_command('06 05')
 
-    @safe_command
     def home(self):
         """Moves the camera to the home position"""
         self.zoom_to(0)
         self.pantilt_home()
 
-    @safe_command
     def zoom(self, speed: int):
         """Zooms out or in at the given speed.
 
