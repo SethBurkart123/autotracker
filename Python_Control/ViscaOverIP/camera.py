@@ -71,7 +71,6 @@ class Camera:
                 message = payload_type + payload_length + sequence_bytes + payload_bytes
 
                 self._sock.sendto(message, self._location)
-                self._sock.sendto(message, self._location)
 
                 response = self._receive_response()
 
