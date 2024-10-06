@@ -22,8 +22,9 @@ currentTilt = 0
 currentZoom = 0
 
 camera_select_mode = False
-preset_setting_mode = False  # New variable for preset setting mode
+preset_setting_mode = False
 
+home_mode = False
 fast_mode_active = False
 
 def connect_to_camera(index):
@@ -122,12 +123,13 @@ while True:
 
     if Controller.inputCtrl.camera_changed:
         new_camera_index = Controller.inputCtrl.selected_camera
+        logging.info(f"Attempting to switch to camera {new_camera_index}")
         if connect_to_camera(new_camera_index):
             current_camera_index = new_camera_index
-            logging.debug(f"Switched to camera at {cameras[current_camera_index]['ip']}")
+            logging.info(f"Successfully switched to camera at {cameras[current_camera_index]['ip']}")
             update_camera_function_button()
         else:
-            logging.debug(f"Failed to switch to camera at index {new_camera_index}")
+            logging.error(f"Failed to switch to camera at index {new_camera_index}")
         Controller.inputCtrl.camera_changed = False
 
     if camera_select_mode:
@@ -178,5 +180,14 @@ while True:
             update_fast_mode_led()
         except Exception as e:
             logging.error(f"Error setting fast pan/tilt mode: {e}")
+    
+    if Controller.inputCtrl.home_bool != home_mode:
+        home_mode = Controller.inputCtrl.home_bool
+        try:
+            cam.reset_sequence_number()
+            cam.home()
+            home_mode = False
+        except Exception as e:
+            logging.error(f"Error homing: {e}")
 
     time.sleep(0.005)

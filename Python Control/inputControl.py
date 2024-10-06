@@ -27,6 +27,7 @@ class inputController:
         self.preset_setting_mode = False  # New attribute for preset setting mode
         self.selected_camera = 0
         self.camera_changed = False
+        self.home_bool = False
 
         # Load camera configuration
         with open('config.json', 'r') as config_file:
@@ -57,6 +58,8 @@ class inputController:
             self.updatePan(int(case[1]))
         elif case[0] == b'2':
             self.updateZoom(int(case[1]))
+        elif case[0] == b'10' and case[1] == b'5':
+            self.home_bool = bool(int(case[2]))
         else:  # update button
             if len(case) == 3:
                 xloc = int(case[1])-2

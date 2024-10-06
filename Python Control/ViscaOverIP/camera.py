@@ -207,6 +207,11 @@ class Camera:
         """Moves the camera to the reset position"""
         self._send_command('06 05')
 
+    def home(self):
+        """Moves the camera to the home position"""
+        self.zoom_to(0)
+        self.pantilt_home()
+
     def zoom(self, speed: int):
         """Zooms out or in at the given speed.
 

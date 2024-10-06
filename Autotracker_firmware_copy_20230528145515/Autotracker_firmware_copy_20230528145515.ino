@@ -1,5 +1,5 @@
 #include <FastLED.h>
-#include <base64.hpp>
+//#include <base64.hpp>
 
 FASTLED_USING_NAMESPACE
 
