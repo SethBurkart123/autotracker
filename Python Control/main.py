@@ -113,13 +113,20 @@ while True:
         try:
             preset_number = Controller.inputCtrl.presetNumber
             logging.debug(f"Attempting to save preset {preset_number + 1}")
-            state.cam.save_preset(preset_number + 1)  # Preset numbers are 1-indexed
+            state.cam.save_preset(preset_number + 1)  # Save the preset in the camera
             print(f"Saved preset {preset_number + 1}")
-            y, x = preset_number % 5, preset_number // 5  # Correctly calculate x and y
-            Controller.LED.update(x, y, [255, 255, 0])  # Yellow color for set preset
-            logging.debug(f"Updated LED at ({x},{y}) to yellow for saved preset")
+
+            # Calculate LED x and y based on the preset number
+            y, x = preset_number % 5, preset_number // 5
+
+            # Light up the selected preset button in yellow
+            Controller.LED.update(x, y, [255, 255, 0])  # Yellow for preset selection
+            Controller.LED.animation_manager.fade_to_black(x, y, duration=1.0)  # Fade to black over 1 second
+
+            logging.debug(f"Updated LED at ({x},{y}) to yellow for saved preset, fading out.")
         except Exception as e:
             print(f"Error saving preset: {e}")
+
         Controller.inputCtrl.setPreset = False
 
     # Pan/tilt updates
