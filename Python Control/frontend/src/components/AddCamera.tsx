@@ -35,7 +35,7 @@ export function AddCamera({ onAdd }: AddCameraProps) {
         ip: ip.trim(),
         color: [color.r, color.g, color.b]
       }
-      await axios.post('http://localhost:9000/camera', newCamera)
+      await axios.post('/api/camera', newCamera)
       toast.success('Camera added successfully')
       onAdd()
       setIp('')

@@ -23,7 +23,7 @@ function App() {
   const fetchConfig = async () => {
     setIsLoading(true)
     try {
-      const response = await axios.get('http://localhost:9000/config')
+      const response = await axios.get('/api/config')
       setConfig(response.data)
     } catch (error) {
       toast.error('Failed to fetch configuration')
@@ -36,13 +36,9 @@ function App() {
     fetchConfig()
   }, [])
 
-  const handleRefresh = () => {
-    fetchConfig()
-  }
-
   const handleRemoveCamera = async (index: number) => {
     try {
-      await axios.delete(`http://localhost:9000/camera/${index}`)
+      await axios.delete(`/api/camera/${index}`)
       toast.success('Camera removed successfully')
       fetchConfig()
     } catch (error) {
@@ -53,7 +49,7 @@ function App() {
   return (
     <div className="container max-w-6xl p-4 mx-auto">
       <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Camera Configuration</h1>
+        <h1 className="text-2xl font-semibold">AutoTracker Configuration</h1>
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm" onClick={fetchConfig} disabled={isLoading}>
             {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
