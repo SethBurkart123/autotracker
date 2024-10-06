@@ -33,7 +33,6 @@ class Camera:
         self._send_command('00 01')  # clear the camera's interface socket
 
     def _send_command(self, command_hex: str, query=False) -> Optional[bytes]:
-        logging.debug(f"Sending command: {command_hex}")
         max_retries = 3
         retry_delay = 0.1
 
@@ -51,10 +50,8 @@ class Camera:
                 message = payload_type + payload_length + sequence_bytes + payload_bytes
 
                 self._sock.sendto(message, self._location)
-                logging.debug(f"Sent message: {message.hex()}")
 
                 response = self._receive_response()
-                logging.debug(f"Received response: {response.hex() if response else 'None'}")
 
                 if response is not None:
                     return response[1:-1]
