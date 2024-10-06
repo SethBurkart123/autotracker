@@ -2,12 +2,31 @@ import socket
 from typing import Optional, Tuple
 import logging
 import time
+import functools
+from threading import Lock
 
 #from ViscaOverIP.CommandBuffer import CommandBuffer
 from ViscaOverIP.exceptions import ViscaException, NoQueryResponse
 
 SEQUENCE_NUM_MAX = 2 ** 32 - 1
 
+def safe_command(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        with self._operation_lock:
+            try:
+                return func(self, *args, **kwargs)
+            except Exception as e:
+                # Log the error
+                print(f"Error in {func.__name__}: {e}")
+                # Reset the connection and retry once
+                self.reset_connection()
+                try:
+                    return func(self, *args, **kwargs)
+                except Exception as e:
+                    print(f"Error persists after reset in {func.__name__}: {e}")
+                    return None
+    return wrapper
 
 class Camera:
     """
@@ -33,7 +52,25 @@ class Camera:
         self.reset_sequence_number()
         self._send_command('00 01')  # clear the camera's interface socket
         #self.command_buffer = CommandBuffer(self)
+        self._operation_lock = Lock()
 
+    def reset_connection(self):
+        # Close the existing socket
+        self._sock.close()
+        
+        # Recreate the socket
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._sock.bind(('', self._location[1]))
+        self._sock.settimeout(0.1)
+
+        # Reset sequence number and clear interface socket
+        self.reset_sequence_number()
+        self._send_command('00 01')
+
+        # Small delay to ensure connection is established
+        time.sleep(0.5)
+
+    @safe_command
     def _send_command(self, command_hex: str, query=False) -> Optional[bytes]:
         #self.command_buffer.add_command(command_hex, query)
         max_retries = 3
@@ -141,6 +178,7 @@ class Camera:
         else:
             self._send_command('7E 08 18 03')
 
+    @safe_command
     def pantilt(self, pan_speed: int, tilt_speed: int, pan_position=None, tilt_position=None, relative=False):
         """Commands the camera to pan and/or tilt.
         You must specify both pan_position and tilt_position OR specify neither
@@ -205,6 +243,7 @@ class Camera:
                 get_direction_hex(pan_speed) + get_direction_hex(tilt_speed)
             )
 
+    @safe_command
     def pantilt_home(self):
         """Moves the camera to the home position"""
         self._send_command('06 04')
@@ -213,11 +252,13 @@ class Camera:
         """Moves the camera to the reset position"""
         self._send_command('06 05')
 
+    @safe_command
     def home(self):
         """Moves the camera to the home position"""
         self.zoom_to(0)
         self.pantilt_home()
 
+    @safe_command
     def zoom(self, speed: int):
         """Zooms out or in at the given speed.
 
