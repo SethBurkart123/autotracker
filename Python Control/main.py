@@ -39,8 +39,9 @@ while True:
     if Controller.inputCtrl.pan != currentPan or Controller.inputCtrl.tilt != currentTilt:
         #Controller.inputCtrl.updatePanTilt = False
         try:
-            currentPan = 1 - Controller.inputCtrl.pan
-            currentTilt = 1 - Controller.inputCtrl.tilt
+            currentPan = -Controller.inputCtrl.pan
+            currentTilt = -Controller.inputCtrl.tilt
+            print(currentPan, currentTilt)
             cam.pantilt(pan_speed=currentPan, tilt_speed=currentTilt)
         except:
             pass
