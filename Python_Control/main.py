@@ -208,3 +208,4 @@ finally:
     api_server.stop()
     Controller.close()
     print('Closed')
+    os._exit(0)
