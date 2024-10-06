@@ -2,6 +2,7 @@ import time
 import AutotrackerKeyboard
 from shared_state import SharedState
 import logging
+import subprocess
 from api.api import API  # Import the API class
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -10,7 +11,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 state = SharedState()
 
 # Create the controller (with serial connection)
-Controller = AutotrackerKeyboard.Controller('/dev/ttyUSB0')
+usb_devices = subprocess.check_output(['ls', '/dev/ttyUSB*'], stderr=subprocess.STDOUT).decode().strip().split('\n')
+Controller = AutotrackerKeyboard.Controller(usb_devices[0])
 state.set_controller(Controller)  # Add this line
 
 # Attempt to connect to the first available camera
