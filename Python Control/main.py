@@ -1,3 +1,5 @@
+import glob
+import os
 import time
 import AutotrackerKeyboard
 from shared_state import SharedState
@@ -10,11 +12,42 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 # Initialize shared state
 state = SharedState()
 
-# Create the controller (with serial connection)
-usb_devices = subprocess.check_output(['ls', '/dev/ttyUSB*'], stderr=subprocess.STDOUT).decode().strip().split('\n')
-print(usb_devices)
-Controller = AutotrackerKeyboard.Controller(usb_devices[0])
-state.set_controller(Controller)  # Add this line
+def find_usb_device():
+    # Try ttyUSB* first
+    usb_devices = glob.glob('/dev/ttyUSB*')
+    if usb_devices:
+        return usb_devices[0]
+    
+    # If no ttyUSB* found, try ttyACM*
+    acm_devices = glob.glob('/dev/ttyACM*')
+    if acm_devices:
+        return acm_devices[0]
+    
+    # If still no device found, check if we're on a Raspberry Pi
+    if os.path.exists('/dev/serial0'):
+        return '/dev/serial0'
+    
+    # No suitable device found
+    return None
+
+usb_device = find_usb_device()
+
+if usb_device is None:
+    print("No suitable USB device found. Please check your connections.")
+    print("Available tty devices:")
+    os.system('ls -l /dev/tty*')
+    sys.exit(1)
+
+try:
+    Controller = AutotrackerKeyboard.Controller(usb_device)
+    state.set_controller(Controller)
+except Exception as e:
+    print(f"Error initializing controller with device {usb_device}: {e}")
+    print("Available tty devices:")
+    os.system('ls -l /dev/tty*')
+    sys.exit(1)
+
+print(f"Successfully connected to {usb_device}")
 
 # Attempt to connect to the first available camera
 for i in range(len(state.cameras)):
