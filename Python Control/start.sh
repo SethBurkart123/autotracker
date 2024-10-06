@@ -1,6 +1,6 @@
 #! /bin/bash
 
-cd ~/Documents/AutoTracker
+cd ~/Documents/AutoTracker/Python\ Control
 git pull
 
 while true; do
