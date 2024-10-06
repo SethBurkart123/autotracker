@@ -114,6 +114,10 @@ try:
             time.sleep(1)
             continue
 
+        if not Controller.are_threads_alive():
+            print("One or more threads have crashed. Shutting down...")
+            break
+
         # Camera select mode
         if Controller.inputCtrl.camera_select_mode:
             if not state.camera_select_mode:
@@ -145,7 +149,7 @@ try:
                 logging.error(f"Failed to switch to camera at index {new_camera_index}")
             Controller.inputCtrl.camera_changed = False
 
-        # **Preset Recall Handling**
+        # Preset Recall Handling
         if Controller.inputCtrl.updatePreset:
             try:
                 preset_number = Controller.inputCtrl.presetNumber + 1
@@ -161,26 +165,20 @@ try:
                 print(f"Error recalling preset: {e}")
             Controller.inputCtrl.updatePreset = False
 
-        # **Preset Save Handling (Add this block)**
+        # Preset Save Handling
         if Controller.inputCtrl.setPreset:
             try:
                 preset_number = Controller.inputCtrl.presetNumber
-                state.cam.save_preset(preset_number + 1)  # Save the preset in the camera
+                state.cam.save_preset(preset_number + 1)
                 print(f"Saved preset {preset_number + 1}")
 
-                # Calculate LED x and y based on the preset number
                 y, x = preset_number % 5, preset_number // 5
-
-                # Light up the selected preset button in yellow
-                Controller.LED.update(x, y, [255, 255, 0])  # Yellow for preset selection
-                
-                # Trigger the fade-to-black animation
+                Controller.LED.update(x, y, [255, 255, 0])
                 Controller.LED.add_fade_to_color_animation(x, y, [0, 0, 255], duration=1.0)
 
                 logging.debug(f"Updated LED at ({x},{y}) to yellow for saved preset, fading out.")
             except Exception as e:
                 print(f"Error saving preset: {e}")
-
             Controller.inputCtrl.setPreset = False
 
         # Pan/tilt updates
@@ -203,7 +201,9 @@ try:
                 state.home_camera()
 
         time.sleep(0.005)
-except KeyboardInterrupt:
+except Exception as e:
+    print(f"An error occurred in the main loop: {e}")
+finally:
     print("Shutting down...")
     api_server.stop()
     Controller.close()

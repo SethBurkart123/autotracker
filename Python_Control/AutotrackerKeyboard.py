@@ -55,3 +55,6 @@ class Controller:
 
     #Close Serial Connection with autotracker
     self.ser.close()
+
+  def are_threads_alive(self):
+    return self.serial_thread.is_alive() and self.led_thread.is_alive()
