@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 import logging
 import time
 
+from ViscaOverIP.CommandBuffer import CommandBuffer
 from ViscaOverIP.exceptions import ViscaException, NoQueryResponse
 
 SEQUENCE_NUM_MAX = 2 ** 32 - 1
@@ -31,9 +32,11 @@ class Camera:
         self.num_retries = 5
         self.reset_sequence_number()
         self._send_command('00 01')  # clear the camera's interface socket
+        self.command_buffer = CommandBuffer(self)
 
     def _send_command(self, command_hex: str, query=False) -> Optional[bytes]:
-        max_retries = 3
+        self.command_buffer.add_command(command_hex, query)
+        """ max_retries = 3
         retry_delay = 0.1
 
         for retry in range(max_retries):
@@ -70,7 +73,7 @@ class Camera:
                 else:
                     raise
 
-        raise NoQueryResponse(f'Could not get a response after {max_retries} tries')
+        raise NoQueryResponse(f'Could not get a response after {max_retries} tries') """
 
     def _receive_response(self) -> Optional[bytes]:
         """Attempts to receive the response of the most recent command.
