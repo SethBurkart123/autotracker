@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 state = SharedState()
 
 def find_usb_device():
+    print("1")
     # Try ttyUSB* first
     usb_devices = glob.glob('/dev/ttyUSB*')
     if usb_devices:
@@ -90,13 +91,14 @@ def update_led_for_normal_mode():
     logging.debug("Updating LEDs for normal mode")
     Controller.LED.clear_all()
     update_camera_function_button()
-    update_fast_mode_led()
+    update_vertical_lock_led() # Renamed function
 
-def update_fast_mode_led():
-    if state.fast_mode_active:
-        Controller.LED.update(3, 4, [0, 0, 0])  # Black for fast mode
+# Renamed and modified function
+def update_vertical_lock_led():
+    if Controller.inputCtrl.vertical_lock_active:
+        Controller.LED.update(3, 4, [255, 0, 0])  # Red when vertical lock is ON
     else:
-        Controller.LED.update(3, 4, [0, 255, 0])  # Green for normal mode
+        Controller.LED.update(3, 4, [0, 255, 0])  # Green when vertical lock is OFF
 
 def update_led_for_preset_setting():
     logging.debug("Updating LEDs for preset setting mode")
@@ -188,10 +190,10 @@ try:
         if Controller.inputCtrl.zoom != state.currentZoom:
             state.update_zoom(Controller.inputCtrl.zoom)
 
-        # Fast mode toggle
-        if Controller.inputCtrl.fast_mode != state.fast_mode_active:
-            state.toggle_fast_mode(Controller.inputCtrl.fast_mode)
-            update_fast_mode_led()
+        # Vertical Lock LED update
+        if Controller.inputCtrl.vertical_lock_changed:
+             update_vertical_lock_led()
+             Controller.inputCtrl.vertical_lock_changed = False # Reset flag
 
         # Home command
         if Controller.inputCtrl.home_bool != state.home_mode:

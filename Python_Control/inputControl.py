@@ -34,14 +34,19 @@ class inputController:
             config = json.load(config_file)
         self.cameras = config['cameras']
 
-        self.fast_mode = False
+        self.vertical_lock_active = False
+        self.vertical_lock_changed = False # Flag to indicate state change for LED update
 
     def updateButton(self, x, y, value):
         self.buttonState[x][y] = value
     
     def updateTilt(self, value):
-        if self.tilt != value:
-            self.tilt = value
+        if self.vertical_lock_active:
+            # If vertical lock is active, force tilt to 0 (neutral)
+            if self.tilt != 0:
+                self.tilt = 0
+        elif self.tilt != value:
+                self.tilt = value
     
     def updatePan(self, value):
         if self.pan != value:
@@ -73,8 +78,13 @@ class inputController:
                 elif xloc == 3 and yloc == 3:  # Preset setting modifier button
                     self.preset_setting_mode = value
                     self.camera_select_mode = False
-                elif xloc == 3 and yloc == 4:  # Slow mode modifier button
-                    self.fast_mode = not value
+                elif xloc == 3 and yloc == 4:  # Vertical lock toggle button
+                    if value: # Toggle only on press down
+                        self.vertical_lock_active = not self.vertical_lock_active
+                        self.vertical_lock_changed = True # Signal that LED needs update
+                        # Force tilt update in case lock was just engaged
+                        if self.vertical_lock_active:
+                            self.updateTilt(self.tilt) # This will force tilt to 0
                 elif self.camera_select_mode:
                     self.process_camera_select(xloc, yloc, value)
                 elif self.preset_setting_mode:
@@ -101,4 +111,3 @@ class inputController:
                 self.presetNumber = preset_index
                 return True  # Indicate that a preset was set
         return False  # No preset was set
-
