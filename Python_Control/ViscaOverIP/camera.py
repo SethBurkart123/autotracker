@@ -221,11 +221,20 @@ class Camera:
                     return '02'
                 else:
                     return '03'
-
-            self._send_command(
+            
+            command_to_send = (
                 payload_start + pan_speed_hex + tilt_speed_hex +
                 get_direction_hex(pan_speed) + get_direction_hex(tilt_speed)
             )
+
+            if pan_speed == 0 and tilt_speed == 0:
+                # send multiple times for reliability
+                for _ in range(3):
+                    self._send_command(command_to_send)
+                    time.sleep(0.005)
+            else:
+                self._send_command(command_to_send)
+
 
     def pantilt_home(self):
         """Moves the camera to the home position"""
@@ -257,7 +266,15 @@ class Camera:
         else:
             direction_hex = '3'
 
-        self._send_command(f'04 07 {direction_hex}{speed_hex}')
+        command_to_send = f'04 07 {direction_hex}{speed_hex}'
+
+        if speed == 0:
+            # send multiple times for reliability
+            for _ in range(3):
+                self._send_command(command_to_send)
+                time.sleep(0.005)
+        else:
+            self._send_command(command_to_send)
     
     def zoom_to(self, position: float):
         """Zooms to an absolute position
