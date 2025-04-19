@@ -1,6 +1,5 @@
 import json
-import logging
-import math
+import time
 
 class inputController:
     def __init__(self, ser):
@@ -38,6 +37,11 @@ class inputController:
         self.vertical_lock_active = False
         self.vertical_lock_changed = False # Flag to indicate state change for LED update
 
+        # Long‑press (home button) handling
+        self.home_pressed_time = None     # Start‑time of current press
+        self.restart_requested = False    # Flag set after ≥5 s hold
+        self.home_short_release = False   # Flag set on short press release
+
     def updateButton(self, x, y, value):
         self.buttonState[x][y] = value
     
@@ -65,7 +69,23 @@ class inputController:
         elif case[0] == b'2':
             self.updateZoom(int(case[1]))
         elif case[0] == b'10' and case[1] == b'5':
-            self.home_bool = bool(int(case[2]))
+            pressed = bool(int(case[2]))
+
+            # Track duration of the press
+            if pressed:
+                if self.home_pressed_time is None:
+                    self.home_pressed_time = time.time()
+            else:
+                if self.home_pressed_time is not None:
+                    duration = time.time() - self.home_pressed_time
+                    if duration >= 5.0:
+                        self.restart_requested = True
+                    else:
+                        # Short press release: request a home action
+                        self.home_short_release = True
+                    self.home_pressed_time = None  # Reset timer
+
+            # No immediate homing on press; handled on release
         else:  # update button
             if len(case) == 3:
                 xloc = int(case[1])-2

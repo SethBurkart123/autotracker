@@ -200,11 +200,27 @@ try:
             state.update_leds()
             Controller.inputCtrl.vertical_lock_changed = False
 
-        # Home command
-        if Controller.inputCtrl.home_bool != state.home_mode:
-            state.home_mode = Controller.inputCtrl.home_bool
-            if state.home_mode:
-                state.home_camera()
+        # Home camera on short press release (long press restart handled elsewhere)
+        if Controller.inputCtrl.home_short_release:
+            state.home_camera()
+            Controller.inputCtrl.home_short_release = False
+
+        # Restart the script when a ≥5 s long‑press on the home button is detected
+        if Controller.inputCtrl.restart_requested:
+            logging.info("Long press detected (>5 s). Restarting script…")
+
+            # Best‑effort cleanup
+            try:
+                api_server.stop()
+            except Exception:
+                pass
+            try:
+                Controller.close()
+            except Exception:
+                pass
+
+            # Re‑exec the current Python program
+            os.execv(sys.executable, ['python'] + sys.argv)
 
         time.sleep(0.005)
 except Exception as e:
