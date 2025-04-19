@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 
 class inputController:
     def __init__(self, ser):
@@ -23,8 +24,8 @@ class inputController:
         self.updatePreset = False
         self.setPreset = False
 
-        self.camera_select_mode = False
-        self.preset_setting_mode = False  # New attribute for preset setting mode
+        self.camera_select_mode = True  # Default to camera select mode
+        self.preset_setting_mode = False
         self.selected_camera = 0
         self.camera_changed = False
         self.home_bool = False
@@ -72,12 +73,14 @@ class inputController:
                 value = bool(int(case[2]))
                 self.updateButton(xloc, yloc, value)
                 
-                if xloc == 3 and yloc == 2:  # Camera select modifier button
-                    self.camera_select_mode = value
-                    self.preset_setting_mode = False
-                elif xloc == 3 and yloc == 3:  # Preset setting modifier button
+                if xloc == 3 and yloc == 3:  # Preset mode modifier button (swap from camera)
                     self.preset_setting_mode = value
-                    self.camera_select_mode = False
+                    self.camera_select_mode = not value  # When preset mode is active, disable camera select mode
+                elif xloc == 3 and yloc == 2:  # Maintain camera selection button functionality for compatibility
+                    # This button now acts as a toggle between modes
+                    if value:  # Only on press down
+                        self.camera_select_mode = not self.camera_select_mode
+                        self.preset_setting_mode = not self.camera_select_mode
                 elif xloc == 3 and yloc == 4:  # Vertical lock toggle button
                     if value: # Toggle only on press down
                         self.vertical_lock_active = not self.vertical_lock_active
@@ -85,14 +88,10 @@ class inputController:
                         # Force tilt update in case lock was just engaged
                         if self.vertical_lock_active:
                             self.updateTilt(self.tilt) # This will force tilt to 0
-                elif self.camera_select_mode:
-                    self.process_camera_select(xloc, yloc, value)
                 elif self.preset_setting_mode:
                     self.process_preset_setting(xloc, yloc, value)
-                elif xloc <= 2:  # first 15 buttons (preset buttons)
-                    if value:  # if button has been pressed down
-                        self.updatePreset = True
-                        self.presetNumber = self.buttonMap[xloc][yloc]
+                elif xloc <= 2:  # first 15 buttons (now used for camera selection by default)
+                    self.process_camera_select(xloc, yloc, value)
 
     def process_camera_select(self, x, y, value):
         if x <= 2 and y <= 4:  # First 15 buttons

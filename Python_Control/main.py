@@ -6,6 +6,7 @@ from shared_state import SharedState
 import logging
 from api.api import API  # Import the API class
 import sys
+from led_state_manager import LedStateManager
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -54,6 +55,11 @@ except Exception as e:
 
 print(f"Successfully connected to {usb_device}")
 
+# Initialise central LED manager
+led_manager = LedStateManager(Controller.LED, state, Controller.inputCtrl)
+state.set_led_manager(led_manager)
+led_manager.update()
+
 # Attempt to connect to the first available camera
 for i in range(len(state.cameras)):
     if state.connect_to_camera(i):
@@ -69,10 +75,18 @@ api_server.start()
 # Initialize the camera function button color
 def update_camera_function_button():
     current_camera_color = state.cameras[state.current_camera_index]['color']
-    Controller.LED.update(3, 2, current_camera_color)
+    # Show the camera button with a different color (more subtle) as it's now a toggle
+    dimmed_color = [int(c * 0.7) for c in current_camera_color]
+    Controller.LED.update(3, 2, dimmed_color)
+    
+    # Update the preset mode button to show its new role
+    if Controller.inputCtrl.preset_setting_mode:
+        Controller.LED.update(3, 3, [255, 0, 0])  # Bright red when active
+    else:
+        Controller.LED.update(3, 3, [100, 0, 0])  # Dim red when inactive
 
-# Call this function to set the initial state
-update_camera_function_button()
+# Initial LED render via the central manager
+led_manager.update()
 
 def update_led_for_camera_select():
     logging.debug("Updating LEDs for camera select mode")
@@ -88,9 +102,9 @@ def update_led_for_camera_select():
     update_camera_function_button()
 
 def update_led_for_normal_mode():
-    logging.debug("Updating LEDs for normal mode")
-    Controller.LED.clear_all()
-    update_camera_function_button()
+    logging.debug("Updating LEDs for normal mode (camera selection)")
+    # Now normal mode shows camera selection options
+    update_led_for_camera_select()
     update_vertical_lock_led() # Renamed function
 
 # Renamed and modified function
@@ -119,25 +133,16 @@ try:
             print("One or more threads have crashed. Shutting down...")
             break
 
-        # Camera select mode
-        if Controller.inputCtrl.camera_select_mode:
-            if not state.camera_select_mode:
-                logging.debug("Entering camera select mode")
-                state.camera_select_mode = True
-                state.preset_setting_mode = False
-                state.update_leds()
-        elif Controller.inputCtrl.preset_setting_mode:
-            if not state.preset_setting_mode:
-                logging.debug("Entering preset setting mode")
-                state.preset_setting_mode = True
-                state.camera_select_mode = False
-                state.update_leds()
-        else:
-            if state.camera_select_mode or state.preset_setting_mode:
-                logging.debug("Exiting special modes")
-                state.camera_select_mode = False
-                state.preset_setting_mode = False
-                state.update_leds()
+        # Update the state based on controller input
+        if Controller.inputCtrl.camera_select_mode != state.camera_select_mode:
+            state.camera_select_mode = Controller.inputCtrl.camera_select_mode
+            logging.debug(f"Camera select mode: {state.camera_select_mode}")
+            state.update_leds()
+            
+        if Controller.inputCtrl.preset_setting_mode != state.preset_setting_mode:
+            state.preset_setting_mode = Controller.inputCtrl.preset_setting_mode
+            logging.debug(f"Preset setting mode: {state.preset_setting_mode}")
+            state.update_leds()
 
         # Camera change handling
         if Controller.inputCtrl.camera_changed:
@@ -192,8 +197,8 @@ try:
 
         # Vertical Lock LED update
         if Controller.inputCtrl.vertical_lock_changed:
-             update_vertical_lock_led()
-             Controller.inputCtrl.vertical_lock_changed = False # Reset flag
+            state.update_leds()
+            Controller.inputCtrl.vertical_lock_changed = False
 
         # Home command
         if Controller.inputCtrl.home_bool != state.home_mode:

@@ -2,7 +2,6 @@ import socket
 from typing import Optional, Tuple
 import logging
 import time
-import functools
 from threading import Lock
 
 #from ViscaOverIP.CommandBuffer import CommandBuffer

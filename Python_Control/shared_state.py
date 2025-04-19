@@ -18,13 +18,14 @@ class SharedState:
         self.currentTilt = 0
         self.currentZoom = 0
 
-        self.camera_select_mode = False
+        self.camera_select_mode = True  # Default to camera select mode
         self.preset_setting_mode = False
 
         self.home_mode = False
         self.fast_mode_active = False
 
         self.controller = None  # Add this line
+        self.led_manager = None  # Centralised LED state manager
 
     def connect_to_camera(self, index):
         """Connect to a camera based on index from the config."""
@@ -80,14 +81,14 @@ class SharedState:
     def set_controller(self, controller):
         self.controller = controller
 
+    def set_led_manager(self, led_manager):
+        """Attach a centralised LED state manager."""
+        self.led_manager = led_manager
+
     def update_leds(self):
-        if self.controller:
-            if self.camera_select_mode:
-                self.update_led_for_camera_select()
-            elif self.preset_setting_mode:
-                self.update_led_for_preset_setting()
-            else:
-                self.update_led_for_normal_mode()
+        """Delegate LED refresh to the central manager (if attached)."""
+        if self.led_manager:
+            self.led_manager.update()
 
     def update_led_for_camera_select(self):
         self.controller.LED.clear_all()
@@ -114,8 +115,8 @@ class SharedState:
         self.update_camera_function_button()
 
     def update_led_for_normal_mode(self):
-        self.controller.LED.clear_all()
-        self.update_camera_function_button()
+        # Now normal mode is camera selection mode
+        self.update_led_for_camera_select()
         self.update_fast_mode_led()
 
     def update_fast_mode_led(self):
@@ -123,4 +124,3 @@ class SharedState:
             self.controller.LED.update(3, 4, [0, 0, 0])
         else:
             self.controller.LED.update(3, 4, [0, 255, 0])
-
