@@ -45,17 +45,32 @@ class inputController:
     def updateButton(self, x, y, value):
         self.buttonState[x][y] = value
     
+    def apply_deadzone(self, value, deadzone=1):
+        """Apply deadzone to eliminate minor drift. Values within ±deadzone become 0,
+        values outside just have the deadzone subtracted."""
+        if abs(value) <= deadzone:
+            return 0
+        
+        # Simply subtract the deadzone from the absolute value
+        if value > 0:
+            return value - deadzone
+        else:
+            return value + deadzone
+
     def updateTilt(self, value):
         if self.vertical_lock_active:
             # If vertical lock is active, force tilt to 0 (neutral)
             if self.tilt != 0:
                 self.tilt = 0
-        elif self.tilt != value:
-                self.tilt = value
+        else:
+            processed_value = self.apply_deadzone(value)
+            if self.tilt != processed_value:
+                self.tilt = processed_value
     
     def updatePan(self, value):
-        if self.pan != value:
-            self.pan = value
+        processed_value = self.apply_deadzone(value)
+        if self.pan != processed_value:
+            self.pan = processed_value
 
     def updateZoom(self, value):
         if self.zoom != value:

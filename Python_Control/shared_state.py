@@ -36,6 +36,11 @@ class SharedState:
                 self.cam = Camera(self.cameras[index]['ip'])
                 self.current_camera_index = index
                 self.cam.slow_pan_tilt(True)
+                # Disable zoom-triggered autofocus to prevent unwanted movement during zoom
+                try:
+                    self.cam.set_autofocus_mode('normal')
+                except Exception as e:
+                    print(f"Warning: Could not set autofocus mode: {e}")
                 return True
             except Exception as e:
                 print(f"Error connecting to camera at {self.cameras[index]['ip']}: {e}")
