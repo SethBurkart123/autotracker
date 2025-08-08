@@ -1,5 +1,8 @@
 import { useRef, useEffect, useState, type MouseEvent } from 'react'
 import type { VirtualCamera, SelectionState, CameraRegion } from '../types/camera'
+import type { VirtualCameraPoseData } from '../types/poseDetection'
+import VirtualCameraPoseDetection from './VirtualCameraPoseDetection'
+import PersonDetectionOverlay from './PersonDetectionOverlay'
 
 interface CameraViewProps {
   deviceId: string
@@ -7,6 +10,7 @@ interface CameraViewProps {
   selectedCameraId: string | null
   isSelectionMode: boolean
   onRegionSelected: (region: CameraRegion) => void
+  enablePersonDetection?: boolean
 }
 
 const CameraView = ({
@@ -14,12 +18,14 @@ const CameraView = ({
   virtualCameras,
   selectedCameraId,
   isSelectionMode,
-  onRegionSelected
+  onRegionSelected,
+  enablePersonDetection = true
 }: CameraViewProps) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [poseData, setPoseData] = useState<VirtualCameraPoseData[]>([])
   const [selection, setSelection] = useState<SelectionState>({
     isSelecting: false,
     startX: 0,
@@ -220,6 +226,15 @@ const CameraView = ({
           />
         )}
         
+        {/* Person detection overlays */}
+        {enablePersonDetection && isStreaming && (
+          <PersonDetectionOverlay
+            virtualCameras={virtualCameras}
+            poseData={poseData}
+            selectedCameraId={selectedCameraId}
+          />
+        )}
+        
         {!isStreaming && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
             <div className="text-white text-center">
@@ -229,6 +244,16 @@ const CameraView = ({
           </div>
         )}
       </div>
+
+      {/* Person detection processor */}
+      {enablePersonDetection && isStreaming && videoRef.current && (
+        <VirtualCameraPoseDetection
+          videoElement={videoRef.current}
+          virtualCameras={virtualCameras}
+          onPoseDetection={setPoseData}
+          detectionInterval={100}
+        />
+      )}
 
       {/* Status indicator */}
       <div className="absolute top-4 right-4">
