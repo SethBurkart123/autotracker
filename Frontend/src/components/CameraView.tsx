@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, type MouseEvent } from 'react'
 import type { VirtualCamera, SelectionState, CameraRegion } from '../types/camera'
 import type { VirtualCameraPoseData } from '../types/poseDetection'
 import VirtualCameraPoseDetection from './VirtualCameraPoseDetection'
+import usePtzTracker from '../hooks/usePtzTracker'
 import PersonDetectionOverlay from './PersonDetectionOverlay'
 
 interface CameraViewProps {
@@ -26,6 +27,13 @@ const CameraView = ({
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [poseData, setPoseData] = useState<VirtualCameraPoseData[]>([])
+  // PTZ tracker (logs VISCA-like commands when enabled)
+  usePtzTracker({
+    enabled: enablePersonDetection && isStreaming,
+    virtualCameras,
+    selectedCameraId,
+    poseData
+  })
   const [selection, setSelection] = useState<SelectionState>({
     isSelecting: false,
     startX: 0,

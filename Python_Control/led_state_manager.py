@@ -18,17 +18,10 @@ class LedStateManager:
 
     def update(self) -> None:
         """Recompute every LED based on the latest application state."""
-        if self.input.camera_select_mode:
-            self._render_camera_select()
-        elif self.input.preset_setting_mode:
-            self._render_preset_setting()
-        else:
-            # Fallback so user always sees camera palette.
-            self._render_camera_select()
+        self._render_camera_select()
 
         # Always‑present indicators
         self._render_vertical_lock()
-        self._render_camera_function_button()
 
     # Internal helpers -------------------------------------------------------
 
@@ -43,14 +36,7 @@ class LedStateManager:
             else:
                 self.led.update(x, y, [int(c * 0.3) for c in colour])
 
-    def _render_preset_setting(self) -> None:
-        """Blue preset buttons + red mode indicator."""
-        self.led.clear_all()
-        for preset in range(10):
-            y, x = preset % 5, preset // 5
-            self.led.update(x, y, [0, 0, 255])
-        # Mode indicator (button 3,3)
-        self.led.update(3, 3, [255, 0, 0])
+    # Preset setting rendering removed
 
     def _render_vertical_lock(self) -> None:
         colour = [255, 0, 0] if self.input.vertical_lock_active else [0, 255, 0]
@@ -60,7 +46,3 @@ class LedStateManager:
         cam_colour = self.state.cameras[self.state.current_camera_index]["color"]
         dimmed = [int(c * 0.7) for c in cam_colour]
         self.led.update(3, 2, dimmed)
-
-        # Preset‑mode visual cue shares the same physical button
-        preset_colour = [255, 0, 0] if self.input.preset_setting_mode else [100, 0, 0]
-        self.led.update(3, 3, preset_colour)

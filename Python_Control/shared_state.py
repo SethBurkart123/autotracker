@@ -19,7 +19,6 @@ class SharedState:
         self.currentZoom = 0
 
         self.camera_select_mode = True  # Default to camera select mode
-        self.preset_setting_mode = False
 
         self.home_mode = False
         self.fast_mode_active = False
@@ -94,35 +93,6 @@ class SharedState:
         """Delegate LED refresh to the central manager (if attached)."""
         if self.led_manager:
             self.led_manager.update()
-
-    def update_led_for_camera_select(self):
-        self.controller.LED.clear_all()
-        for i, camera in enumerate(self.cameras):
-            y, x = i % 5, i // 5
-            color = camera['color']
-            if i == self.current_camera_index:
-                self.controller.LED.update(x, y, color)
-            else:
-                dark_color = [int(c * 0.3) for c in color]
-                self.controller.LED.update(x, y, dark_color)
-        self.update_camera_function_button()
-
-    def update_camera_function_button(self):
-        current_camera_color = self.cameras[self.current_camera_index]['color']
-        self.controller.LED.update(3, 2, current_camera_color)
-
-    def update_led_for_preset_setting(self):
-        self.controller.LED.clear_all()
-        for i in range(10):
-            y, x = i % 5, i // 5
-            self.controller.LED.update(x, y, [0, 0, 255])
-        self.controller.LED.update(3, 3, [255, 0, 0])
-        self.update_camera_function_button()
-
-    def update_led_for_normal_mode(self):
-        # Now normal mode is camera selection mode
-        self.update_led_for_camera_select()
-        self.update_fast_mode_led()
 
     def update_fast_mode_led(self):
         if self.fast_mode_active:

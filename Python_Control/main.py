@@ -72,57 +72,6 @@ if state.cam is None:
 api_server = API(host='0.0.0.0', port=9000, controller=Controller, shared_state=state)
 api_server.start()
 
-# Initialize the camera function button color
-def update_camera_function_button():
-    current_camera_color = state.cameras[state.current_camera_index]['color']
-    # Show the camera button with a different color (more subtle) as it's now a toggle
-    dimmed_color = [int(c * 0.7) for c in current_camera_color]
-    Controller.LED.update(3, 2, dimmed_color)
-    
-    # Update the preset mode button to show its new role
-    if Controller.inputCtrl.preset_setting_mode:
-        Controller.LED.update(3, 3, [255, 0, 0])  # Bright red when active
-    else:
-        Controller.LED.update(3, 3, [100, 0, 0])  # Dim red when inactive
-
-# Initial LED render via the central manager
-led_manager.update()
-
-def update_led_for_camera_select():
-    logging.debug("Updating LEDs for camera select mode")
-    Controller.LED.clear_all()
-    for i, camera in enumerate(state.cameras):
-        y, x = i % 5, i // 5
-        color = camera['color']
-        if i == state.current_camera_index:
-            Controller.LED.update(x, y, color)  # Full brightness
-        else:
-            dark_color = [int(c * 0.3) for c in color]  # 30% brightness for non-selected cameras
-            Controller.LED.update(x, y, dark_color)
-    update_camera_function_button()
-
-def update_led_for_normal_mode():
-    logging.debug("Updating LEDs for normal mode (camera selection)")
-    # Now normal mode shows camera selection options
-    update_led_for_camera_select()
-    update_vertical_lock_led() # Renamed function
-
-# Renamed and modified function
-def update_vertical_lock_led():
-    if Controller.inputCtrl.vertical_lock_active:
-        Controller.LED.update(3, 4, [255, 0, 0])  # Red when vertical lock is ON
-    else:
-        Controller.LED.update(3, 4, [0, 255, 0])  # Green when vertical lock is OFF
-
-def update_led_for_preset_setting():
-    logging.debug("Updating LEDs for preset setting mode")
-    Controller.LED.clear_all()
-    for i in range(10):  # Assuming 10 preset buttons
-        y, x = i % 5, i // 5
-        Controller.LED.update(x, y, [0, 0, 255])  # Blue color for preset buttons
-    Controller.LED.update(3, 3, [255, 0, 0])  # Red color for preset setting button
-    update_camera_function_button()
-
 try:
     while True:
         if state.cam is None:
@@ -138,11 +87,7 @@ try:
             state.camera_select_mode = Controller.inputCtrl.camera_select_mode
             logging.debug(f"Camera select mode: {state.camera_select_mode}")
             state.update_leds()
-            
-        if Controller.inputCtrl.preset_setting_mode != state.preset_setting_mode:
-            state.preset_setting_mode = Controller.inputCtrl.preset_setting_mode
-            logging.debug(f"Preset setting mode: {state.preset_setting_mode}")
-            state.update_leds()
+        
 
         # Camera change handling
         if Controller.inputCtrl.camera_changed:
@@ -155,37 +100,6 @@ try:
                 logging.error(f"Failed to switch to camera at index {new_camera_index}")
             Controller.inputCtrl.camera_changed = False
 
-        # Preset Recall Handling
-        if Controller.inputCtrl.updatePreset:
-            try:
-                preset_number = Controller.inputCtrl.presetNumber + 1
-                y, x = (preset_number - 1) % 5, (preset_number - 1) // 5
-
-                Controller.LED.update(x, y, [255, 255, 0])
-                Controller.LED.add_fade_to_black_animation(x, y, duration=0.5)
-
-                state.cam.recall_preset(preset_number)
-
-                print(f"Recalled preset {preset_number}")
-            except Exception as e:
-                print(f"Error recalling preset: {e}")
-            Controller.inputCtrl.updatePreset = False
-
-        # Preset Save Handling
-        if Controller.inputCtrl.setPreset:
-            try:
-                preset_number = Controller.inputCtrl.presetNumber
-                state.cam.save_preset(preset_number + 1)
-                print(f"Saved preset {preset_number + 1}")
-
-                y, x = preset_number % 5, preset_number // 5
-                Controller.LED.update(x, y, [255, 255, 0])
-                Controller.LED.add_fade_to_color_animation(x, y, [0, 0, 255], duration=1.0)
-
-                logging.debug(f"Updated LED at ({x},{y}) to yellow for saved preset, fading out.")
-            except Exception as e:
-                print(f"Error saving preset: {e}")
-            Controller.inputCtrl.setPreset = False
 
         # Pan/tilt updates
         if Controller.inputCtrl.pan != state.currentPan or Controller.inputCtrl.tilt != state.currentTilt:
