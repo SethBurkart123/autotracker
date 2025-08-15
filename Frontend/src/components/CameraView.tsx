@@ -12,6 +12,7 @@ interface CameraViewProps {
   isSelectionMode: boolean
   onRegionSelected: (region: CameraRegion) => void
   enablePersonDetection?: boolean
+  sendAutoTrackingCommands?: (commands: Array<{camera_index: number, pan_speed: number, tilt_speed: number}>) => void
 }
 
 const CameraView = ({
@@ -20,19 +21,21 @@ const CameraView = ({
   selectedCameraId,
   isSelectionMode,
   onRegionSelected,
-  enablePersonDetection = true
+  enablePersonDetection = true,
+  sendAutoTrackingCommands
 }: CameraViewProps) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [poseData, setPoseData] = useState<VirtualCameraPoseData[]>([])
-  // PTZ tracker (logs VISCA-like commands when enabled)
+  // PTZ tracker (sends commands to API when enabled)
   usePtzTracker({
     enabled: enablePersonDetection && isStreaming,
     virtualCameras,
     selectedCameraId,
-    poseData
+    poseData,
+    sendAutoTrackingCommands
   })
   const [selection, setSelection] = useState<SelectionState>({
     isSelecting: false,

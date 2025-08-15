@@ -74,6 +74,7 @@ interface UsePtzTrackerArgs {
   selectedCameraId: string | null
   poseData: VirtualCameraPoseData[]
   config?: Partial<PtzTrackerConfig>
+  sendAutoTrackingCommands?: (commands: Array<{camera_index: number, pan_speed: number, tilt_speed: number}>) => void
 }
 
 export const usePtzTracker = ({
@@ -81,7 +82,8 @@ export const usePtzTracker = ({
   virtualCameras,
   selectedCameraId,
   poseData,
-  config
+  config,
+  sendAutoTrackingCommands
 }: UsePtzTrackerArgs) => {
   const cfg: PtzTrackerConfig = useMemo(() => ({ ...DEFAULTS, ...(config || {}) }), [config])
 
@@ -297,15 +299,25 @@ export const usePtzTracker = ({
     const accelMag = Math.hypot(a.x, a.y)
     phaseRef.current = subjectCenter ? computePhase(speed, accelMag) : timeSinceDetection <= cfg.noDetectionHoldMs ? 'tracking' : 'lost'
 
-    // Log VISCA-like command (replace with real control when API ready)
-    // Map normalized velocity to hypothetical VISCA speed scale [-24, 24]
+    // Send commands to API if available and camera has Python mapping
+    // Map normalized velocity to VISCA speed scale [-24, 24]
     const panSpeed = Math.round(cameraVelRef.current.x * 24)
     const tiltSpeed = Math.round(cameraVelRef.current.y * 24)
-    // Only log if changed noticeably
+    
+    if (sendAutoTrackingCommands && cam.pythonCameraIndex !== null) {
+      sendAutoTrackingCommands([{
+        camera_index: cam.pythonCameraIndex,
+        pan_speed: panSpeed,
+        tilt_speed: tiltSpeed
+      }])
+    }
+    
+    // Debug logging
     if (Math.abs(panSpeed) + Math.abs(tiltSpeed) > 0) {
       // eslint-disable-next-line no-console
       console.log('[PTZ]', {
         cameraId: cam.id,
+        pythonCameraIndex: cam.pythonCameraIndex,
         zone,
         phase: phaseRef.current,
         panSpeed,

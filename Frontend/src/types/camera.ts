@@ -38,6 +38,7 @@ export interface VirtualCamera {
   name: string
   region: CameraRegion | null
   isActive: boolean
+  pythonCameraIndex: number | null // Maps to Python camera index for control
 }
 
 export interface SelectionState {
@@ -46,4 +47,10 @@ export interface SelectionState {
   startY: number
   currentX: number
   currentY: number
+}
+
+export interface PythonCamera {
+  index: number
+  ip: string
+  color: number[]
 }

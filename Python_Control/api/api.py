@@ -13,6 +13,14 @@ class CameraModel(BaseModel):
     ip: str
     color: list
 
+class AutoTrackingCommand(BaseModel):
+    camera_index: int
+    pan_speed: float
+    tilt_speed: float
+
+class AutoTrackingCommands(BaseModel):
+    commands: list[AutoTrackingCommand]
+
 class API:
     def __init__(self, host='0.0.0.0', port=9000, controller=None, shared_state=None):
         self.host = host
@@ -90,6 +98,44 @@ class API:
                 self.shared_state.update_leds()
                 return {"message": f"Camera at index {index} removed successfully", "removed_camera": removed_camera}
             raise fastapi.HTTPException(status_code=404, detail="Camera not found")
+
+        @self.app.get("/api/autotrack/status")
+        async def get_autotrack_status():
+            return {
+                "auto_tracking_active": self.controller.inputCtrl.auto_tracking_active if self.controller else False,
+                "current_camera_index": self.shared_state.current_camera_index,
+                "auto_tracking_commands": self.shared_state.auto_tracking_commands
+            }
+
+        @self.app.post("/api/autotrack/toggle")
+        async def toggle_autotrack():
+            if self.controller:
+                self.controller.inputCtrl.auto_tracking_active = not self.controller.inputCtrl.auto_tracking_active
+                self.controller.inputCtrl.auto_tracking_changed = True
+                return {"auto_tracking_active": self.controller.inputCtrl.auto_tracking_active}
+            raise fastapi.HTTPException(status_code=500, detail="Controller not available")
+
+        @self.app.post("/api/autotrack/commands")
+        async def update_autotrack_commands(commands: AutoTrackingCommands):
+            for cmd in commands.commands:
+                self.shared_state.update_auto_tracking_command(
+                    cmd.camera_index, 
+                    cmd.pan_speed, 
+                    cmd.tilt_speed
+                )
+            return {"message": "Auto tracking commands updated successfully"}
+
+        @self.app.get("/api/python-cameras")
+        async def get_python_cameras():
+            """Get the list of cameras from Python control system for frontend mapping."""
+            cameras_with_index = []
+            for i, camera in enumerate(self.shared_state.cameras):
+                cameras_with_index.append({
+                    "index": i,
+                    "ip": camera["ip"],
+                    "color": camera["color"]
+                })
+            return {"cameras": cameras_with_index}
 
     def save_config(self):
         with open('config.json', 'w') as f:

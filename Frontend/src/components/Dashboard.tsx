@@ -3,8 +3,10 @@ import WebcamSelector from './WebcamSelector'
 import CameraView from './CameraView'
 import CameraRegionManager from './CameraRegionManager'
 import VirtualCameraPreview from './VirtualCameraPreview'
+import CameraMappingManager from './CameraMappingManager'
 import { useCameraDevices } from '../hooks/useCameraDevices'
 import { useVirtualCameras } from '../hooks/useVirtualCameras'
+import { useAutoTracking } from '../hooks/useAutoTracking'
 
 const Dashboard = () => {
   const { devices, loading, error } = useCameraDevices()
@@ -24,6 +26,15 @@ const Dashboard = () => {
     toggleCamera,
     importConfiguration
   } = useVirtualCameras()
+
+  const {
+    pythonCameras,
+    autoTrackingStatus,
+    loading: autoTrackingLoading,
+    error: autoTrackingError,
+    toggleAutoTracking,
+    sendAutoTrackingCommands
+  } = useAutoTracking()
 
   // Load saved device ID from localStorage on mount
   useEffect(() => {
@@ -87,6 +98,16 @@ const Dashboard = () => {
               onImportConfiguration={importConfiguration}
             />
           </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <CameraMappingManager
+              virtualCameras={virtualCameras}
+              pythonCameras={pythonCameras}
+              onUpdateCamera={updateVirtualCamera}
+              autoTrackingActive={autoTrackingStatus.auto_tracking_active}
+              onToggleAutoTracking={toggleAutoTracking}
+            />
+          </div>
         </div>
 
         {/* Main Content */}
@@ -133,6 +154,7 @@ const Dashboard = () => {
               isSelectionMode={isSelectionMode}
               onRegionSelected={handleRegionSelected}
               enablePersonDetection={enablePersonDetection}
+              sendAutoTrackingCommands={sendAutoTrackingCommands}
             />
           </div>
 

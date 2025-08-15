@@ -23,8 +23,6 @@ class inputController:
         self.updatePreset = False
         self.setPreset = False
 
-        self.camera_select_mode = True  # Default to camera select mode
-        self.preset_setting_mode = False
         self.selected_camera = 0
         self.camera_changed = False
         self.home_bool = False
@@ -36,6 +34,9 @@ class inputController:
 
         self.vertical_lock_active = False
         self.vertical_lock_changed = False # Flag to indicate state change for LED update
+        
+        self.auto_tracking_active = False
+        self.auto_tracking_changed = False # Flag to indicate state change for LED update
 
         # Long‑press (home button) handling
         self.home_pressed_time = None     # Start‑time of current press
@@ -108,14 +109,10 @@ class inputController:
                 value = bool(int(case[2]))
                 self.updateButton(xloc, yloc, value)
                 
-                if xloc == 3 and yloc == 3:  # Preset mode modifier button (swap from camera)
-                    self.preset_setting_mode = value
-                    self.camera_select_mode = not value  # When preset mode is active, disable camera select mode
-                elif xloc == 3 and yloc == 2:  # Maintain camera selection button functionality for compatibility
-                    # This button now acts as a toggle between modes
-                    if value:  # Only on press down
-                        self.camera_select_mode = not self.camera_select_mode
-                        self.preset_setting_mode = not self.camera_select_mode
+                if xloc == 3 and yloc == 3:  # Auto tracking toggle button
+                    if value: # Toggle only on press down
+                        self.auto_tracking_active = not self.auto_tracking_active
+                        self.auto_tracking_changed = True # Signal that LED needs update
                 elif xloc == 3 and yloc == 4:  # Vertical lock toggle button
                     if value: # Toggle only on press down
                         self.vertical_lock_active = not self.vertical_lock_active
@@ -123,9 +120,7 @@ class inputController:
                         # Force tilt update in case lock was just engaged
                         if self.vertical_lock_active:
                             self.updateTilt(self.tilt) # This will force tilt to 0
-                elif self.preset_setting_mode:
-                    self.process_preset_setting(xloc, yloc, value)
-                elif xloc <= 2:  # first 15 buttons (now used for camera selection by default)
+                elif xloc <= 2:  # first 15 buttons (used for camera selection)
                     self.process_camera_select(xloc, yloc, value)
 
     def process_camera_select(self, x, y, value):
@@ -137,11 +132,3 @@ class inputController:
                 return True  # Indicate that a camera was selected
         return False  # No camera was selected
 
-    def process_preset_setting(self, x, y, value):
-        if x <= 2 and y <= 4:  # First 15 buttons
-            preset_index = x * 5 + y
-            if value:  # Button pressed
-                self.setPreset = True
-                self.presetNumber = preset_index
-                return True  # Indicate that a preset was set
-        return False  # No preset was set

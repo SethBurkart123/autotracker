@@ -32,7 +32,8 @@ export const useVirtualCameras = () => {
       id: Date.now().toString(),
       name,
       region: null,
-      isActive: true
+      isActive: true,
+      pythonCameraIndex: null
     }
     setVirtualCameras(prev => [...prev, newCamera])
     return newCamera.id

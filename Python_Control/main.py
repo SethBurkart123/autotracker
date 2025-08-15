@@ -82,11 +82,10 @@ try:
             print("One or more threads have crashed. Shutting down...")
             break
 
-        # Update the state based on controller input
-        if Controller.inputCtrl.camera_select_mode != state.camera_select_mode:
-            state.camera_select_mode = Controller.inputCtrl.camera_select_mode
-            logging.debug(f"Camera select mode: {state.camera_select_mode}")
+        # Auto Tracking LED update
+        if Controller.inputCtrl.auto_tracking_changed:
             state.update_leds()
+            Controller.inputCtrl.auto_tracking_changed = False
         
 
         # Camera change handling

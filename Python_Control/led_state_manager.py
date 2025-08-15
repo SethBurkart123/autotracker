@@ -22,6 +22,7 @@ class LedStateManager:
 
         # Always‑present indicators
         self._render_vertical_lock()
+        self._render_auto_tracking()
 
     # Internal helpers -------------------------------------------------------
 
@@ -42,7 +43,6 @@ class LedStateManager:
         colour = [255, 0, 0] if self.input.vertical_lock_active else [0, 255, 0]
         self.led.update(3, 4, colour)
 
-    def _render_camera_function_button(self) -> None:
-        cam_colour = self.state.cameras[self.state.current_camera_index]["color"]
-        dimmed = [int(c * 0.7) for c in cam_colour]
-        self.led.update(3, 2, dimmed)
+    def _render_auto_tracking(self) -> None:
+        colour = [255, 0, 0] if self.input.auto_tracking_active else [0, 0, 0]
+        self.led.update(3, 3, colour)

@@ -18,10 +18,11 @@ class SharedState:
         self.currentTilt = 0
         self.currentZoom = 0
 
-        self.camera_select_mode = True  # Default to camera select mode
-
         self.home_mode = False
         self.fast_mode_active = False
+
+        # Auto tracking storage for all cameras
+        self.auto_tracking_commands = {}  # {camera_index: {'pan_speed': float, 'tilt_speed': float}}
 
         self.controller = None  # Add this line
         self.led_manager = None  # Centralised LED state manager
@@ -55,14 +56,39 @@ class SharedState:
         self.home_mode = False
 
     def update_pan_tilt(self, pan, tilt):
-        """Update pan and tilt state."""
+        """Update pan and tilt state, combining joystick and auto tracking."""
         self.currentPan = pan
         self.currentTilt = tilt
+        
+        # Get auto tracking commands for current camera if active
+        auto_pan = 0
+        auto_tilt = 0
+        if (self.controller and self.controller.inputCtrl.auto_tracking_active and 
+            self.current_camera_index in self.auto_tracking_commands):
+            auto_commands = self.auto_tracking_commands[self.current_camera_index]
+            auto_pan = auto_commands.get('pan_speed', 0)
+            auto_tilt = auto_commands.get('tilt_speed', 0)
+        
+        # Combine joystick and auto tracking (additive)
+        combined_pan = pan + auto_pan
+        combined_tilt = tilt + auto_tilt
+        
+        # Clamp to valid VISCA range [-24, 24]
+        combined_pan = max(-24, min(24, combined_pan))
+        combined_tilt = max(-24, min(24, combined_tilt))
+        
         if self.cam:
             try:
-                self.cam.pantilt(pan_speed=-pan, tilt_speed=-tilt)
+                self.cam.pantilt(pan_speed=-combined_pan, tilt_speed=-combined_tilt)
             except Exception as e:
                 print(f"Error updating pan/tilt: {e}")
+
+    def update_auto_tracking_command(self, camera_index, pan_speed, tilt_speed):
+        """Update auto tracking command for a specific camera."""
+        self.auto_tracking_commands[camera_index] = {
+            'pan_speed': pan_speed,
+            'tilt_speed': tilt_speed
+        }
 
     def update_zoom(self, zoom):
         """Update zoom state."""
